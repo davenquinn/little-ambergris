@@ -1,4 +1,4 @@
-data=../data
+data=/Volumes/Lilienthal/Ambergris-2016
 build=$(data)/derived
 multispectral=$(build)/little-ambergris-8band-WV2-mosaic.tif
 
