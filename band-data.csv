@@ -1,0 +1,7 @@
+id,band_1,band_2,band_3,comment
+vegetation,7,6,5,mimics NDVI
+rgb,5,3,2,
+false-color,7,5,3,
+landcover,8,4,1,
+contrast,8,7,6,red-near IR
+coastal,3,2,1,
