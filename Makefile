@@ -33,4 +33,12 @@ $(bandmap_dir):
 bandmaps: make-bandmaps.py band-data.csv $(multispectral) $(bandmap_dir)
 	python3 $^
 
-mbtiles: $(build)/little-ambergris-visible.mbtiles
+%.mbtiles: %.vrt | $(build)
+	 $(gdal)/gdal_translate -of mbtiles $^ $@
+	 $(gdal)/gdaladdo -r average $@ 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192
+
+
+vrtfiles=$(wildcard $(bandmap_dir)/*.vrt)
+mbtiles_files=$(subst .vrt,.mbtiles,$(vrtfiles))
+
+mbtiles: $(mbtiles_files)
