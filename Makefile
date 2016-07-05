@@ -1,4 +1,9 @@
-include satellite.mk
+#include satellite.mk
 
-all: mbtiles mosaic
+all: theodolite_data #satellite
 
+theodolite=../data/theodolite
+
+theodolite_data: theodolite-processing/read-datafiles.py $(wildcard $(theodolite)/raw-data/*.GSI)
+	echo "Processing"
+	python $^

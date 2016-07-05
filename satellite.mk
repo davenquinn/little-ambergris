@@ -19,7 +19,7 @@ images=7-24-2012_50cm_8BandPS_Ortho.tif 3-25-2013_50cm_8BandPS_Ortho.tif
 $(multispectral): $(addprefix $(data)/Mosaic/,$(images))
 	$(gdal)/gdalwarp -r lanczos -srcnodata 0 -t_srs EPSG:900913 $^ $@
 
-PHONY: clean mosaic bandmaps mbtiles
+.PHONY: clean mosaic bandmaps mbtiles satellite
 clean:
 	rm -f $(build)/*.vrt
 mosaic: $(multispectral)
@@ -40,3 +40,5 @@ vrtfiles=$(wildcard $(bandmap_dir)/*.vrt)
 mbtiles_files=$(subst .vrt,.mbtiles,$(vrtfiles))
 
 mbtiles: $(mbtiles_files)
+
+satellite: mosaic mbtiles
