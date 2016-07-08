@@ -6,6 +6,7 @@ from io import StringIO
 from pandas import read_table, Series, concat
 from IPython import embed
 from datetime import datetime
+from sqlalchemy import create_engine
 
 subs = [
     ("\+0+"," +0"),
@@ -28,14 +29,24 @@ def read_data(fn):
             text += clean(line)+'\n'
         cleaned = StringIO(text)
         df = read_table(cleaned, header=None, delim_whitespace=True,
-                    index_col=0, dtype=int,names=["id","easting","northing","elevation"])
+                    index_col=0, dtype=int,
+                    names=["id","easting","northing","elevation"])
         n = Path(f.name).stem
         df['collection'] = Series([n]*len(df), index=df.index)
         for i in ['northing','easting','elevation']:
             df[i] /= 1000
         return df
 
-data = concat([read_data(fn) for fn in argv[1:]])
-data.to_excel("../data/theodolite/raw-theodolite-data.xlsx")
+data = concat([read_data(fn) for fn in argv[1:]],
+        ignore_index=True)
 
-embed()
+# Get rid of data inconsistencies
+data.drop([1,2,3,4,15], inplace=True)
+
+data.set_index('id',inplace=True)
+
+engine = create_engine("postgresql:///little-ambergris")
+
+data.to_sql('theodolite_data', engine, schema='mapping',
+    if_exists='fail')
+
