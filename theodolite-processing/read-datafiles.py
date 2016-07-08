@@ -26,7 +26,6 @@ def read_data(fn):
         text = ''
         for line in f:
             text += clean(line)+'\n'
-        print(text)
         cleaned = StringIO(text)
         df = read_table(cleaned, header=None, delim_whitespace=True,
                     index_col=0, dtype=int,names=["id","easting","northing","elevation"])
@@ -34,9 +33,9 @@ def read_data(fn):
         df['collection'] = Series([n]*len(df), index=df.index)
         for i in ['northing','easting','elevation']:
             df[i] /= 1000
-        df['northing']
         return df
 
 data = concat([read_data(fn) for fn in argv[1:]])
+data.to_excel("../data/theodolite/raw-theodolite-data.xlsx")
 
 embed()
