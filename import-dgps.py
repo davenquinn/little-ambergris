@@ -24,5 +24,3 @@ engine = create_engine("postgresql:///little-ambergris")
 df.to_sql('dgps_data', engine, schema='mapping',
     if_exists='replace', index=True)
 
-embed()
-
