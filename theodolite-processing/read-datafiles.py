@@ -7,6 +7,7 @@ from pandas import read_table, Series, concat
 from IPython import embed
 from datetime import datetime
 from sqlalchemy import create_engine
+import numpy as N
 
 subs = [
     ("\+0+"," +0"),
@@ -23,6 +24,8 @@ def clean(text):
     return text
 
 def read_data(fn):
+    names = ["easting","northing","elevation"]
+    raw_names = ['raw_'+i for i in names]
     with open(fn) as f:
         text = ''
         for line in f:
@@ -30,11 +33,14 @@ def read_data(fn):
         cleaned = StringIO(text)
         df = read_table(cleaned, header=None, delim_whitespace=True,
                     index_col=0, dtype=int,
-                    names=["id","easting","northing","elevation"])
+                    names=["id"]+raw_names)
         n = Path(f.name).stem
         df['collection'] = Series([n]*len(df), index=df.index)
-        for i in ['northing','easting','elevation']:
+        for i in raw_names:
             df[i] /= 1000
+        for i in names:
+            df[i] = N.nan
+        df['origin_distance'] = N.linalg.norm(df.loc[:,['raw_easting','raw_northing']],axis=1)
         return df
 
 data = concat([read_data(fn) for fn in argv[1:]],
@@ -48,5 +54,5 @@ data.set_index('id',inplace=True)
 engine = create_engine("postgresql:///little-ambergris")
 
 data.to_sql('theodolite_data', engine, schema='mapping',
-    if_exists='fail')
+    if_exists='replace')
 

@@ -3,14 +3,22 @@
 all: theodolite_data database #satellite
 
 dbname=little-ambergris
+data=../remote-data
 theodolite=../data/theodolite
 
-theodolite_data: theodolite-processing/read-datafiles.py $(wildcard $(theodolite)/raw-data/*.GSI)
-	python $^
+psql=psql $(dbname)
+
+theodolite: $(wildcard $(theodolite)/raw-data/*.GSI)
+	$(psql) -c "DROP VIEW IF EXISTS mapping.theodolite;"
+	python theodolite-processing/read-datafiles.py $^
+	python theodolite-processing/reference-theodolite.py
+	$(psql) -f create-views.sql
 
 database:
-	-psql $(dbname) -f setup-database.sql
-	psql $(dbname) -f create-views.sql
+	-$(psql) -f setup-database.sql
+	$(psql) -f create-views.sql
 
-dgps: import-dgps.py ../remote-data/DGPS/all-data.txt
+dgps: import-dgps.py $(data)/DGPS/all-data.txt
+	$(psql) -c "DROP VIEW IF EXISTS mapping.dgps;"
 	python $^
+	$(psql) -f create-views.sql

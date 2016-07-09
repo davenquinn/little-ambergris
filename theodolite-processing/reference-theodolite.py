@@ -26,22 +26,24 @@ for coll in collections:
     # Affine transformation matrix (3x4)
     # can be augmented with a final [0,0,0,1] if desired
     A = toCoords@N.linalg.pinv(fromCoords)
-
-    # trans_matrix, residuals, rank, sv = N.linalg.lstsq(augment(fromCoords), toCoords)
-
+ 
     sol = A@fromCoords
 
     errors = toCoords-sol
-    print(A, errors)
 
     # Apply transformation to dataset
     loc = theodolite_data['collection'] == coll
-    points = N.array(theodolite_data.ix[loc,0:3])
-    data = A@augment(points).transpose()
+    points = augment(N.array(theodolite_data.ix[loc,0:3])).transpose()
+    data = A@points
+    origin = A@N.array([[0,0,0,1]]).transpose()
+
+    print(coll)
+    print(A)
+    print(origin)
+
     theodolite_data.ix[loc,4:7] = data.transpose()
 
 theodolite_data.to_sql('theodolite_data', db, schema='mapping',
     if_exists='replace', index=True)
 
 embed()
-
