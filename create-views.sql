@@ -30,3 +30,23 @@ CREATE VIEW mapping.reference_errors AS
     *,
     ST_Length(geometry) length
   FROM q;
+
+DROP VIEW mapping.elevation_data;
+CREATE VIEW mapping.elevation_data AS
+  WITH dgps AS (
+    SELECT
+      id,
+      'dgps'::text instrument,
+      geometry,
+      elevation
+    FROM mapping.dgps),
+    theodolite AS (
+      SELECT
+        -id id,
+        'theodolite'::text instrument,
+        geometry,
+        elevation
+      FROM mapping.theodolite)
+  SELECT * FROM dgps
+  UNION ALL
+  SELECT * FROM theodolite;
