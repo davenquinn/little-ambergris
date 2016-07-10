@@ -37,9 +37,9 @@ for coll in collections:
 
     U,s,V = N.linalg.svd(cov,full_matrices=False)
     A = N.eye(U.shape[1])
-    A[-1,-1] = N.linalg.det(V@U.T)
+    A[-1,-1] = N.linalg.det(V.T@U.T)
 
-    R = -V@A@U.transpose()
+    R = V.T@A@U.transpose()
     T = N.array(to_coords.mean())-R@N.array(from_coords.mean())
 
     # Apply transformation to dataset
