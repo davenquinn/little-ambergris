@@ -20,30 +20,39 @@ collections = ref_data['collection'].unique()
 for coll in collections:
     loc = ref_data['collection'] == coll
     ref = ref_data.ix[loc]
-    fromCoords = augment(N.array(ref.iloc[:,4:7])).transpose()
-    toCoords = N.array(ref.iloc[:,1:4]).transpose()
+    fromCoords = augment(N.array(ref.iloc[:,4:7]))
 
-    # Affine transformation matrix (3x4)
-    # can be augmented with a final [0,0,0,1] if desired
-    A = toCoords@N.linalg.pinv(fromCoords)
- 
-    sol = A@fromCoords
+    from_coords = ref.iloc[:,4:7]
+    to_coords = ref.iloc[:,1:4]
 
-    errors = toCoords-sol
+    center = lambda x: x-x.mean()
+
+    from_centered = from_coords-from_coords.mean()
+    to_centered = to_coords-to_coords.mean()
+
+    X = N.array(from_centered).transpose()
+    Y = N.array(to_centered).transpose()
+
+    cov = X@Y.transpose()
+
+    U,s,V = N.linalg.svd(cov,full_matrices=False)
+    A = N.eye(U.shape[1])
+    A[-1,-1] = N.linalg.det(V@U.T)
+
+    R = -V@A@U.transpose()
+    T = N.array(to_coords.mean())-R@N.array(from_coords.mean())
 
     # Apply transformation to dataset
     loc = theodolite_data['collection'] == coll
-    points = augment(N.array(theodolite_data.ix[loc,0:3])).transpose()
-    data = A@points
-    origin = A@N.array([[0,0,0,1]]).transpose()
+    points = N.array(theodolite_data.ix[loc,0:3])#-N.array(from_coords.mean())
+    data = points@R.T+T
 
     print(coll)
-    print(A)
-    print(origin)
+    print(R)
+    print(T)
 
-    theodolite_data.ix[loc,4:7] = data.transpose()
+    theodolite_data.ix[loc,4:7] = data
 
 theodolite_data.to_sql('theodolite_data', db, schema='mapping',
     if_exists='replace', index=True)
 
-embed()

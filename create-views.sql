@@ -13,3 +13,20 @@ CREATE VIEW mapping.theodolite AS
     (r.theodolite_point IS NOT NULL) reference_point
   FROM mapping.theodolite_data t
   LEFT JOIN mapping.theodolite_reference r ON r.theodolite_point = t.id;
+
+DROP VIEW mapping.reference_errors;
+CREATE VIEW mapping.reference_errors AS
+  WITH q AS (SELECT
+      t.id,
+      t.collection,
+      ST_SetSRID(ST_MakeLine(
+        ST_Point(g.easting, g.northing),
+        ST_Point(t.easting, t.northing)),32619) geometry,
+      g.elevation
+    FROM mapping.theodolite_reference r
+    JOIN mapping.dgps_data g ON g.id = r.dgps_point
+    JOIN mapping.theodolite_data t ON t.id = r.theodolite_point)
+  SELECT
+    *,
+    ST_Length(geometry) length
+  FROM q;
