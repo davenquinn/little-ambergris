@@ -9,4 +9,5 @@ SELECT
 	t.raw_elevation raw_elevation
 FROM mapping.theodolite_reference r
 JOIN mapping.dgps_data g ON g.id = r.dgps_point
-JOIN mapping.theodolite_data t ON t.id = r.theodolite_point;
+JOIN mapping.theodolite_data t ON t.id = r.theodolite_point
+WHERE r.use = true;
