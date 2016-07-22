@@ -16,6 +16,7 @@ theodolite_data = run_query("SELECT * FROM mapping.theodolite_data",
             index_col='id')
 
 collections = ref_data['collection'].unique()
+rotations = []
 
 for coll in collections:
     loc = ref_data['collection'] == coll
@@ -42,6 +43,7 @@ for coll in collections:
     A[-1,-1] = N.linalg.det(V.T@U.T)
 
     R = V.T@A@U.transpose()
+
     T = N.array(to_coords.mean())-R@N.array(from_coords.mean())
 
     sol = R@X
@@ -53,9 +55,36 @@ for coll in collections:
     # Apply transformation to dataset
     loc = theodolite_data['collection'] == coll
     points = N.array(theodolite_data.ix[loc,0:3])
-    data = points@R.T+T
+
+    # Convert to homogeneous coordinates and transform
+    Ra = N.hstack((R,T[:,N.newaxis]))
+
+    if R[2,2] < 0:
+        # Reflect around line between tie points
+        # http://ami.ektf.hu/uploads/papers/finalpdf/AMI_40_from175to186.pdf
+        coords = N.array(from_coords)
+        v1 = coords[1]-coords[0]
+        v2 = N.array([0,0,1])
+        n = N.cross(v1,v2)
+        c = n/N.linalg.norm(n)
+
+        T = N.eye(4)
+        T[:3,3] = coords[0]
+
+        Refl = N.eye(4)
+        Refl[:3,:3] -= 2*N.outer(c,c)
+        #Refl[:3,3] -= 2*c*coords[0]
+
+        Tinv = N.eye(4)
+        Tinv[:3,3] -= coords[0]
+
+        Ra = Ra@T@Refl@Tinv
+
+    data = augment(points)@Ra.T
 
     print(coll)
+    print(R)
+    print(to_coords.shape)
     print("RMS error (pointwise): {}".format(rms_pt))
     print("RMS error (x y z): {}".format(rms_ax))
     print()
