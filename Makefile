@@ -1,10 +1,18 @@
-#include satellite.mk
-
-all: theodolite_data database #satellite
+all: theodolite database drone_data #satellite
 
 dbname=little-ambergris
-data=../remote-data
+data:=/Volumes/Lilienthal/Ambergris-2016
+mbtiles_overview_levels:=2 4 8 16 32 64 128 256 512 1024 2048 4096 8192
 theodolite=../data/theodolite
+
+web_mercator=EPSG:3857
+
+%.mbtiles: %.vrt
+	gdal_translate -of mbtiles $^ $@
+	gdaladdo -r average $@ $(mbtiles_overview_levels)
+
+include drone-data.mk
+#include satellite.mk
 
 psql=psql $(dbname)
 
