@@ -14,7 +14,8 @@ drop_views:
 	$(psql) -c "DROP VIEW IF EXISTS mapping.theodolite;"
 	$(psql) -c "DROP VIEW IF EXISTS mapping.reference_errors;"
 
-theodolite: $(wildcard $(theodolite)/raw-data/*.GSI) | drop_views
+heights=$(theodolite)/theodolite-data-updated-staff.xlsx
+theodolite: $(heights) $(wildcard $(theodolite)/raw-data/*.GSI) | drop_views
 	python theodolite-processing/read-datafiles.py $^
 	python theodolite-processing/reference-theodolite.py
 	$(psql) -f create-views.sql

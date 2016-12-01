@@ -3,7 +3,7 @@ from functools import reduce
 import re
 from pathlib import Path
 from io import StringIO
-from pandas import read_table, Series, concat
+from pandas import read_table, read_excel, Series, concat
 from IPython import embed
 from datetime import datetime
 from sqlalchemy import create_engine
@@ -43,13 +43,29 @@ def read_data(fn):
         df['origin_distance'] = N.linalg.norm(df.loc[:,['raw_easting','raw_northing']],axis=1)
         return df
 
-data = concat([read_data(fn) for fn in argv[1:]],
+# Collect and deal with staff height
+meas = read_excel(argv[1], index_col=2)
+meas.drop(
+    ['Depth to 1st first crust','Depth to 2nd crust','Date'],
+    inplace=True, axis=1)
+meas.rename(
+    columns={
+        'Deepest Depth Measurement (cm)':'depth',
+    }, inplace=True)
+meas.rename(columns=lambda x: x.lower(), inplace=True)
+
+data = concat([read_data(fn) for fn in argv[2:]],
         ignore_index=True)
 
 # Get rid of data inconsistencies
 data.drop([1,2,3,4,15], inplace=True)
 
 data.set_index('id',inplace=True)
+
+data = data.join(meas)
+assumed_staff_height = 1.5
+correction = assumed_staff_height - data['staff height']
+data['raw_elevation'] += correction
 
 engine = create_engine("postgresql:///little-ambergris")
 
