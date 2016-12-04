@@ -4,6 +4,10 @@ multispectral=$(build)/little-ambergris-8band-WV2-mosaic.tif
 
 # Requires GDAL 2.0
 
+%.mbtiles: %.vrt
+	gdal_translate -of mbtiles $^ $@
+	gdaladdo -r average $@ $(mbtiles_overview_levels)
+
 $(build):
 	mkdir -p $@
 

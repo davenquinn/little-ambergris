@@ -7,10 +7,6 @@ theodolite=../data/theodolite
 
 web_mercator=EPSG:3857
 
-%.mbtiles: %.vrt
-	gdal_translate -of mbtiles $^ $@
-	gdaladdo -r average $@ $(mbtiles_overview_levels)
-
 include drone-data.mk
 #include satellite.mk
 
@@ -31,6 +27,7 @@ theodolite: $(heights) $(wildcard $(theodolite)/raw-data/*.GSI) | drop_views
 database:
 	-$(psql) -f setup-database.sql
 	$(psql) -f create-views.sql
+	$(psql) -f topology-views.sql
 
 dgps: import-dgps.py $(data)/DGPS/all-data.txt | drop_views
 	python $^
