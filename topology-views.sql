@@ -38,6 +38,7 @@ CREATE MATERIALIZED VIEW map_topology.face_data AS
   point AS (
     SELECT
       p.unit_id,
+      p.secondary_unit_id,
       p.geometry
     FROM mapping.unit_point p
     LEFT JOIN mapping.unit unit ON p.unit_id = unit.id)
@@ -45,20 +46,40 @@ CREATE MATERIALIZED VIEW map_topology.face_data AS
     face.face_id,
     face.geometry,
     unit.id AS unit_id,
-    unit.color
+    point.secondary_unit_id,
+    unit.color,
+    unit2.color secondary_unit_color
   FROM face
     LEFT JOIN point ON ST_Intersects(face.geometry, point.geometry)
     LEFT JOIN mapping.unit unit ON point.unit_id = unit.id
+    LEFT JOIN mapping.unit unit2 ON point.secondary_unit_id = unit2.id
   WHERE face.geometry IS NOT NULL;
+
+--- Edge-contact relation
+CREATE OR REPLACE VIEW mapping.edge_contact AS
+  SELECT
+  	id contact_id,
+  	r.element_id edge_id
+	FROM mapping.contact
+  JOIN map_topology.relation r
+	  ON (geometry).id = r.topogeo_id
+	  AND (geometry).layer_id = r.layer_id
+	  AND (geometry).type = r.element_type;
 
 CREATE OR REPLACE VIEW mapping.contact_data AS
   WITH edges AS (
-      SELECT
-        edge_id,
-        geom,
+      SELECT DISTINCT ON (e.edge_id)
+        e.edge_id,
+        e.geom,
         lf.unit_id left_unit,
-        rf.unit_id right_unit
+        lf.secondary_unit_id left_secondary_unit,
+        rf.unit_id right_unit,
+        rf.secondary_unit_id right_secondary_unit,
+        c.arbitrary,
+        c.certainty
       FROM map_topology.edge_data e
+      JOIN mapping.edge_contact ec ON ec.edge_id = e.edge_id
+      JOIN mapping.contact c ON ec.contact_id = c.id
       LEFT OUTER JOIN map_topology.face_data lf ON e.left_face = lf.face_id
       LEFT OUTER JOIN map_topology.face_data rf ON e.right_face = rf.face_id
       WHERE lf.face_id != rf.face_id),
@@ -69,9 +90,26 @@ CREATE OR REPLACE VIEW mapping.contact_data AS
     FROM edges
     JOIN mapping.unit_tree lt ON left_unit = lt.id
     JOIN mapping.unit_tree rt ON right_unit = rt.id
-    WHERE lt.tree != rt.tree)
-  SELECT
+    WHERE lt.tree != rt.tree),
+  a AS (SELECT
     *,
+    CASE WHEN left_unit = right_unit
+        OR left_unit = right_secondary_unit
+        OR right_unit = left_secondary_unit
+    THEN true
+    ELSE false END AS same_unit,
     coalesce(array_length(tree_intersection,1),0) commonality
-  FROM edge_intersection;
+  FROM edge_intersection)
+  SELECT
+    a.*,
+    CASE WHEN same_unit THEN 0
+    ELSE 1/(commonality::real+1) END AS weight,
+    CASE WHEN same_unit THEN 'no'
+         WHEN certainty IS NULL OR certainty > 8 THEN 'solid'
+         WHEN certainty > 6 THEN 'dash'
+         WHEN certainty > 4 THEN 'dash dot'
+         ELSE 'dot' END AS dotstyle
+  FROM a;
 
+-- Set schema search path for easier querying
+ALTER DATABASE "little-ambergris" SET search_path TO public,mapping,map_topology;

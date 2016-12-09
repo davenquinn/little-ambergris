@@ -24,10 +24,12 @@ theodolite: $(heights) $(wildcard $(theodolite)/raw-data/*.GSI) | drop_views
 	python theodolite-processing/reference-theodolite.py
 	$(psql) -f create-views.sql
 
-database:
+database: topology_views
 	-$(psql) -f setup-database.sql
 	$(psql) -f create-views.sql
-	$(psql) -f topology-views.sql
+
+topology_views: topology-views.sql
+	$(psql) -f $^
 
 dgps: import-dgps.py $(data)/DGPS/all-data.txt | drop_views
 	python $^

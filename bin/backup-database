@@ -1,0 +1,10 @@
+#!/bin/zsh
+# Dump Naukluft PostgreSQL database to custom dump format and save
+# to the backup directory.
+
+dbname="little-ambergris"
+PROJECT_DIR="/Users/Daven/Projects/Turks and Caicos"
+dn="$PROJECT_DIR/data/database-backups"
+
+mkdir -p "${dn}"
+pg_dump -Fc -d $dbname -f "$dn/${dbname}-$(date +%Y-%m-%d,%H.%M.%S).pg-dump"

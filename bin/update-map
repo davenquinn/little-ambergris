@@ -1,0 +1,8 @@
+#!/usr/bin/env zsh
+
+dbname="little-ambergris"
+
+dn=${0:h}
+$dn/update-colors $dbname "${dn:h}/unit-colors.txt" 'mapping.unit'
+clean-topology --db $dbname --topology map_topology
+psql $dbname -c 'REFRESH MATERIALIZED VIEW map_topology.face_data'
