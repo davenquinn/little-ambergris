@@ -86,6 +86,8 @@ CREATE OR REPLACE VIEW mapping.contact_data AS
   edge_intersection AS (
     SELECT
       edges.*,
+      lt.tree ltree,
+      rt.tree rtree,
       ARRAY (SELECT UNNEST(lt.tree) INTERSECT SELECT UNNEST(rt.tree)) tree_intersection
     FROM edges
     JOIN mapping.unit_tree lt ON left_unit = lt.id
@@ -102,14 +104,16 @@ CREATE OR REPLACE VIEW mapping.contact_data AS
   FROM edge_intersection)
   SELECT
     a.*,
-    CASE WHEN same_unit THEN 0
-    ELSE 1/(commonality::real+1) END AS weight,
-    CASE WHEN same_unit THEN 'no'
-         WHEN certainty IS NULL OR certainty > 8 THEN 'solid'
-         WHEN certainty > 6 THEN 'dash'
+    CASE
+      WHEN left_unit = right_unit AND left_secondary_unit = right_secondary_unit THEN 0
+      WHEN same_unit THEN 0.1
+      WHEN ('mat'=ANY(ltree) AND right_unit = 'crusty_bay') THEN 0.1
+      WHEN ('mat'=ANY(rtree) AND left_unit = 'crusty_bay') THEN 0.1
+      ELSE 1/(commonality::real+3) END AS weight,
+    CASE --WHEN same_unit THEN 'no'
+         WHEN certainty IS NULL OR certainty > 7 THEN 'solid'
+         WHEN certainty > 5 THEN 'dash'
          WHEN certainty > 4 THEN 'dash dot'
          ELSE 'dot' END AS dotstyle
   FROM a;
 
--- Set schema search path for easier querying
-ALTER DATABASE "little-ambergris" SET search_path TO public,mapping,map_topology;

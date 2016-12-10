@@ -1,12 +1,13 @@
-bedrock          #9e9d9d
-crusty_bay       #8ba7c1
-sand_flat        #ffea60
-eps_poly_mixed   #df6c6c
-  eps_mat        #eead71
-  poly_mat       #c78274
-blister_mat      #8a5766
-mangrove         #4c6651
-overgrown_channel #80af89
-other_channel    #b6c8cd
-grainy_channel   #cbdfe6
-ocean            #ffffff
+bedrock            #beb9b9
+sand_flat          #ffe7b8
+crusty_bay         #f6904f
+  eps_mat          #db845e
+  poly_mat         #cb6753
+blister_mat        #794a59
+mangrove           #546658
+overgrown_channel  #768f7b
+other_channel      #b6c8cd
+grainy_channel     #cdeafb
+ocean              #ffffff
+desiccated_mat     #9e7380
+alkaline_pond      #b285bb
