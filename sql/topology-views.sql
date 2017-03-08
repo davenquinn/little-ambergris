@@ -47,12 +47,19 @@ CREATE MATERIALIZED VIEW map_topology.face_data AS
     face.geometry,
     unit.id AS unit_id,
     point.secondary_unit_id,
+    t.tree,
     unit.color,
-    unit2.color secondary_unit_color
+    unit2.color secondary_unit_color,
+    CASE WHEN unit.id = 'desiccated_mat' THEN false
+         WHEN 'mat' = ANY(t.tree) THEN true
+         WHEN unit.id = 'crusty_bay' THEN true
+         ELSE false
+    END AS is_mat
   FROM face
     LEFT JOIN point ON ST_Intersects(face.geometry, point.geometry)
     LEFT JOIN mapping.unit unit ON point.unit_id = unit.id
     LEFT JOIN mapping.unit unit2 ON point.secondary_unit_id = unit2.id
+    JOIN mapping.unit_tree t ON point.unit_id = t.id
   WHERE face.geometry IS NOT NULL;
 
 --- Edge-contact relation
