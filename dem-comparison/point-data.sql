@@ -6,6 +6,7 @@ SELECT
   northing,
   elevation
 FROM theodolite
+WHERE id != 0
 UNION ALL
 SELECT
   id,

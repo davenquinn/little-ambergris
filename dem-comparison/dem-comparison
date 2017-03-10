@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
+import numpy as N
+from pandas import Series
 import rasterio
 from pathlib import Path
-from os import getenv, path
-
-project = Path(getenv('PROJECT_DIR'))
-
-from database import run_query
+from os import getenv
+from scipy.optimize import minimize
+from database import db, run_query
 
 # Get data from database for DGPS and theodolite
 # as a pandas data table
@@ -14,14 +14,42 @@ dn = Path(__file__).parent
 df = run_query(dn/'point-data.sql')
 
 ### Read images
-datadir =project/'remote-data'
+project = Path(getenv('PROJECT_DIR'))
+datadir = project/'remote-data'
 img = datadir/"drone-dem-07-Mar-2017/drone-dem/AmbergrisDEM_UTM19N.tif"
 
 with rasterio.open(str(img),'r') as f:
-    import IPython; IPython.embed()
-### Find raster values at coordinates
+    ### Find raster values at coordinates
+    indices = ((r.easting,r.northing)
+               for i,r in df.iterrows())
+    samples = list(i[0] for i in f.sample(indices))
 
+    elev = Series(samples)
+    elev[elev < -10000] = N.nan
+    df['dem_elevation'] = elev
 
-### Do statistics
+### Find offset between elevations
+# Minimize sum of squared errors between the DEM and point-based
+# elevation.
+# There is an offset of ~40.5 meters which is presumably traceable
+# to CRS differences
+# Filter down to dgps
+dgps = df.loc[df['type'] == 'dgps']
+
+error = lambda d: N.array(d['dem_elevation'] - d['elevation'])
+
+e = error(dgps)
+def sse(offset):
+    return ((e-offset)**2).sum()
+
+res = minimize(sse, float(0))
+offset = res.x[0]
+
+df['elevation'] += offset
+df['error'] = error(df)
 
 ### Write back to database
+df.to_sql('dem_reference', db,
+          schema='mapping',
+          if_exists='replace',
+          index=False)
