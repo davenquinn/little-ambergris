@@ -37,7 +37,11 @@ dgps: import-dgps.py $(data)/DGPS/all-data.txt | drop_views
 
 .PHONY: dem-comparison
 dem-comparison:
-	./dem-comparison/dem-comparison
+	-mkdir $@/build
+	# This may fail depending on if
+	# we have the DEM in the filesystem
+	-$@/dem-comparison
+	$@/create-figures
 
 ###
 # Install modules required for this project
