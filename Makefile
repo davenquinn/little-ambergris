@@ -35,6 +35,14 @@ dgps: import-dgps.py $(data)/DGPS/all-data.txt | drop_views
 	python $^
 	$(psql) -f sql/create-views.sql
 
+.PHONY: dem-comparison
+dem-comparison:
+	./dem-comparison/dem-comparison
+
+###
+# Install modules required for this project
+###
+
 .PHONY: install
 install:
 	pip install -e python_modules/database
