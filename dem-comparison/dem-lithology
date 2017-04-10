@@ -8,6 +8,7 @@ from image_files import DEM
 from rasterio.features import geometry_mask
 from matplotlib.pyplot import subplots
 import numpy as N
+import seaborn as sns
 
 # Get polygon geometries
 
@@ -20,30 +21,29 @@ with (file.parent/'feature-geometry.sql').open('r') as f:
 df = GeoDataFrame.from_postgis(sql, db)
 # Build feature raster
 
-arrays = []
-labels = []
-colors = []
 with rasterio.open(str(DEM),'r') as img:
-    data = img.read(1,masked=True)
-    for ix, d in df.iterrows():
-        mask = geometry_mask(d.geom,img.shape,
+    imdata = img.read(1,masked=True)
+
+    def get_values(geom):
+        mask = geometry_mask(geom,img.shape,
                     img.transform,invert=True)
+        return imdata[mask==True].compressed()
 
-        values = data[mask==True].compressed()
+    df['array'] = df.geom.map(get_values)
 
-        n = len(values)
-        t = d.unit_id.strip()
-        μ = values.mean()
-        σ = values.std()
-        print(f"{t}: {n} records, μ {μ}, σ {σ}")
-
-        arrays.append(values)
-        labels.append(t)
-        colors.append(d.color.strip())
+for i,d in df.iterrows():
+    n = len(d.array)
+    t = d.unit_id.strip()
+    μ = d.array.mean()
+    σ = d.array.std()
+    print(f"{t}: {n} records, μ {μ}, σ {σ}")
 
 fig, ax = subplots()
-ax.hist(arrays, bins=N.linspace(-1,1,1000), histtype='step',
-        label=labels, color=colors, alpha=0.9)
+ax.hist(df.array, bins=N.linspace(-1,1,1000),
+        histtype='step',
+        label=df.unit_id.str.strip(),
+        color=df.color.str.strip(),
+        alpha=0.9)
 fn = str(build_dir/'dem-lithology.pdf')
 
 ax.set_ylabel("Area (pixels)")
@@ -52,3 +52,4 @@ ax.set_xlim(-1,1)
 ax.legend()
 
 fig.savefig(fn)
+
