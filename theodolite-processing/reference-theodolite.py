@@ -1,4 +1,3 @@
-from IPython import embed
 from database import db,run_query
 from affine import Affine
 import numpy as N
@@ -9,22 +8,19 @@ def augment(a):
     arr[:,:-1] = a
     return arr
 
-ref_data = run_query("theodolite-processing/sql/reference-data.sql",
-            index_col='id')
-
-theodolite_data = run_query("SELECT * FROM mapping.theodolite_data",
-            index_col='id')
-
-collections = ref_data['collection'].unique()
-rotations = []
-
-for coll in collections:
-    loc = ref_data['collection'] == coll
-    ref = ref_data.ix[loc]
-    fromCoords = augment(N.array(ref.iloc[:,4:7]))
+def process_collection(ref, theodolite):
+    """
+    Process theodolite correction points for a single set
+    of joined data (typically, a single session with the
+    base station fixed).
+    """
 
     from_coords = ref.iloc[:,4:7]
     to_coords = ref.iloc[:,1:4]
+
+    if N.allclose(from_coords, to_coords):
+        print("Identity transform")
+        return from_coords
 
     # https://igl.ethz.ch/projects/ARAP/svd_rot.pdf
 
@@ -33,10 +29,10 @@ for coll in collections:
     from_centered = N.array(from_coords-from_coords.mean())
     to_centered = N.array(to_coords-to_coords.mean())
 
-    X = from_centered.transpose()
-    Y = to_centered.transpose()
+    X = from_centered.T
+    Y = to_centered.T
 
-    cov = X@Y.transpose()
+    cov = X@Y.T
 
     U,s,V = N.linalg.svd(cov,full_matrices=False)
     A = N.eye(U.shape[1])
@@ -53,8 +49,7 @@ for coll in collections:
 
 
     # Apply transformation to dataset
-    loc = theodolite_data['collection'] == coll
-    points = N.array(theodolite_data.ix[loc,0:3])
+    points = N.array(theodolite.ix[:,0:3])
 
     # Convert to homogeneous coordinates and transform
     Ra = N.hstack((R,T[:,N.newaxis]))
@@ -82,15 +77,50 @@ for coll in collections:
 
     data = augment(points)@Ra.T
 
-    print(coll)
-    print(R)
     print(to_coords.shape)
-    print("RMS error (pointwise): {}".format(rms_pt))
-    print("RMS error (x y z): {}".format(rms_ax))
+    print(f"RMS error (pointwise): {rms_pt}")
+    print(f"RMS error (x y z): {rms_ax}")
     print()
+    return data
 
-    theodolite_data.ix[loc,4:7] = data
+def reference_theodolite(ref_data, theodolite_data):
 
-theodolite_data.to_sql('theodolite_data', db, schema='mapping',
+    collections = ref_data['collection']
+
+    for coll in collections.unique():
+        print(coll)
+        ref = ref_data.ix[collections == coll]
+
+        loc = theodolite_data.collection == coll
+        theo = theodolite_data.loc[loc]
+
+        theodolite_data.ix[loc,4:7] = process_collection(ref, theo)
+    return theodolite_data
+
+# First-stage reference data
+ref_data = run_query(
+    "theodolite-processing/sql/reference-data.sql",
+    index_col='id')
+data = run_query(
+    "SELECT * FROM mapping.theodolite_data",
+    index_col='id')
+
+data = reference_theodolite(ref_data, data)
+
+data.to_sql('theodolite_data', db, schema='mapping',
     if_exists='replace', index=True)
+
+### TODO: Second-stage transform doesn't work yet
+# Output of first stage becomes input to second
+# But everything is an identity transform
+# ref_data2 = run_query(
+    # "theodolite-processing/sql/reference-height.sql",
+    # index_col='id')
+# step2data = run_query(
+    # "SELECT * FROM mapping.theodolite_data",
+    # index_col='id')
+# data2 = reference_theodolite(ref_data2, step2data)
+
+# data2.to_sql('theodolite_data', db, schema='mapping',
+    # if_exists='replace', index=True)
 

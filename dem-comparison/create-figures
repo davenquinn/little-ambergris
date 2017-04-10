@@ -6,7 +6,8 @@ from matplotlib.pyplot import subplots
 from database import run_query
 from pathlib import Path
 
-build_dir = Path(__file__).with_name('build')
+file = Path(__file__)
+build_dir = file.with_name('build')
 
 df = run_query('SELECT * FROM mapping.dem_reference')
 dgps = df[df.type=='dgps']
@@ -17,17 +18,24 @@ fig, ax = subplots()
 dgps.error.hist(ax=ax, bins=100)
 
 ax.set_xlim(-2,2)
+ax.set_ylabel("n measurements")
+ax.set_xlabel("DGPS-DEM error (m)")
 
 fn = str(build_dir/'dgps-errors.pdf')
 fig.savefig(fn)
 
 ## Theodolite and DGPS
-
+theodolite = df[df.type == 'theodolite']
 fig, ax = subplots()
-df.error.hist(by=df.type,ax=ax,
-        bins=100, stacked=True)
+ax.hist([dgps.error, theodolite.error],
+        bins=100, stacked=True, label=['DGPS','Theodolite'])
+
+ax.legend()
 
 ax.set_xlim(-2,2)
+ax.set_ylabel("n measurements")
+ax.set_xlabel("DEM error (m)")
+
 
 fn = str(build_dir/'error-comparison.pdf')
 fig.savefig(fn)

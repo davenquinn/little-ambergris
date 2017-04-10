@@ -1,11 +1,11 @@
-DROP VIEW mapping.dgps;
+DROP VIEW IF EXISTS mapping.dgps;
 CREATE VIEW mapping.dgps AS
   SELECT
     *,
     ST_SetSRID(ST_Point(easting, northing),32619) geometry
   FROM mapping.dgps_data;
 
-DROP VIEW mapping.theodolite;
+DROP VIEW IF EXISTS mapping.theodolite;
 CREATE VIEW mapping.theodolite AS
   SELECT
     t.*,
@@ -14,7 +14,7 @@ CREATE VIEW mapping.theodolite AS
   FROM mapping.theodolite_data t
   LEFT JOIN mapping.theodolite_reference r ON r.theodolite_point = t.id;
 
-DROP VIEW mapping.reference_errors;
+DROP VIEW IF EXISTS mapping.reference_errors;
 CREATE VIEW mapping.reference_errors AS
   WITH q AS (SELECT
       t.id,
@@ -31,7 +31,7 @@ CREATE VIEW mapping.reference_errors AS
     ST_Length(geometry) length
   FROM q;
 
-DROP VIEW mapping.elevation_data;
+DROP VIEW IF EXISTS mapping.elevation_data;
 CREATE VIEW mapping.elevation_data AS
   WITH dgps AS (
     SELECT

@@ -44,6 +44,7 @@ def sse(offset):
 
 res = minimize(sse, float(0))
 offset = res.x[0]
+print(f"Offset {offset}")
 
 df['elevation'] += offset
 df['error'] = error(df)

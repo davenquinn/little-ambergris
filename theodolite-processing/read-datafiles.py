@@ -4,7 +4,6 @@ import re
 from pathlib import Path
 from io import StringIO
 from pandas import read_table, read_excel, Series, concat
-from IPython import embed
 from datetime import datetime
 from sqlalchemy import create_engine
 import numpy as N
