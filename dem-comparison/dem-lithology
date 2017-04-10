@@ -8,7 +8,8 @@ from image_files import DEM
 from rasterio.features import geometry_mask
 from matplotlib.pyplot import subplots
 import numpy as N
-import seaborn as sns
+from colour import Color
+from seaborn.apionly import despine
 
 # Get polygon geometries
 
@@ -22,7 +23,10 @@ df = GeoDataFrame.from_postgis(sql, db)
 # Build feature raster
 
 with rasterio.open(str(DEM),'r') as img:
+    px_size = img.transform.a
+
     imdata = img.read(1,masked=True)
+    print("Image has been read")
 
     def get_values(geom):
         mask = geometry_mask(geom,img.shape,
@@ -30,26 +34,46 @@ with rasterio.open(str(DEM),'r') as img:
         return imdata[mask==True].compressed()
 
     df['array'] = df.geom.map(get_values)
+    df['mean'] = df.array.map(lambda d: d.mean())
+
+df.sort('mean',ascending=True, inplace=True)
 
 for i,d in df.iterrows():
     n = len(d.array)
     t = d.unit_id.strip()
-    μ = d.array.mean()
+
+    area = n*px_size**2/1e6
+    μ = d['mean']
     σ = d.array.std()
-    print(f"{t}: {n} records, μ {μ}, σ {σ}")
+    print(f"{t}")
+    print(f"  {n} pixels")
+    print(f"  {area:.3f} km²")
+    print(f"  μ {μ:.3f} m")
+    print(f"  σ {σ:.3f} m")
+    print("")
 
-fig, ax = subplots()
-ax.hist(df.array, bins=N.linspace(-1,1,1000),
-        histtype='step',
-        label=df.unit_id.str.strip(),
-        color=df.color.str.strip(),
-        alpha=0.9)
+fig, ax = subplots(figsize=(10,6))
+
+arrays = df.array.map(lambda d: N.random.choice(d, len(d)//1000))
+
+pos = N.arange(len(arrays))
+parts = ax.violinplot(arrays,pos,
+            points=300, widths=0.95, showmeans=True,
+            showextrema=False, showmedians=False, bw_method=0.25)
+
+colors =  df.color.str.strip()
+for pc, color in zip(parts['bodies'], colors):
+    pc.set_color(color)
+
+parts['cmeans'].set_color(colors)
+
+ax.set_xticks(pos)
+ax.set_xticklabels(df.unit_id.str.strip())
+
+ax.set_ylabel("Elevation")
+ax.set_xlabel("Facies")
+ax.set_ylim(-1,1)
+
 fn = str(build_dir/'dem-lithology.pdf')
-
-ax.set_ylabel("Area (pixels)")
-ax.set_xlabel("Elevation (m)")
-ax.set_xlim(-1,1)
-ax.legend()
-
-fig.savefig(fn)
+fig.savefig(fn, bbox_inches='tight')
 
