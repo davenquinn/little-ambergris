@@ -4,9 +4,9 @@ import numpy as N
 from pandas import Series
 import rasterio
 from pathlib import Path
-from os import getenv
 from scipy.optimize import minimize
 from database import db, run_query
+from image_files import DEM
 
 # Get data from database for DGPS and theodolite
 # as a pandas data table
@@ -14,11 +14,7 @@ dn = Path(__file__).parent
 df = run_query(dn/'point-data.sql')
 
 ### Read images
-project = Path(getenv('PROJECT_DIR'))
-datadir = project/'remote-data'
-img = datadir/"drone-dem-07-Mar-2017/drone-dem/AmbergrisDEM_UTM19N.tif"
-
-with rasterio.open(str(img),'r') as f:
+with rasterio.open(str(DEM),'r') as f:
     ### Find raster values at coordinates
     indices = ((r.easting,r.northing)
                for i,r in df.iterrows())

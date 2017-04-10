@@ -43,10 +43,14 @@ dem-comparison:
 	-$@/dem-comparison
 	$@/create-figures
 
+.PHONY: dem-lithology
+dem-lithology:
+	dem-comparison/$@
+
 ###
 # Install modules required for this project
 ###
 
 .PHONY: install
 install:
-	pip install -e python_modules/database
+	pip install -e python_modules

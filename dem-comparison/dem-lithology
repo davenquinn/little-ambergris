@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+import rasterio
+from pathlib import Path
+from geopandas import GeoDataFrame
+from database import db
+from image_files import DEM
+from rasterio.features import geometry_mask
+from matplotlib.pyplot import subplots
+import numpy as N
+
+# Get polygon geometries
+
+file = Path(__file__)
+build_dir = file.with_name('build')
+
+with (file.parent/'feature-geometry.sql').open('r') as f:
+    sql = f.read()
+
+df = GeoDataFrame.from_postgis(sql, db)
+# Build feature raster
+
+arrays = []
+labels = []
+colors = []
+with rasterio.open(str(DEM),'r') as img:
+    data = img.read(1,masked=True)
+    for ix, d in df.iterrows():
+        mask = geometry_mask(d.geom,img.shape,
+                    img.transform,invert=True)
+
+        values = data[mask==True].compressed()
+
+        n = len(values)
+        t = d.unit_id.strip()
+        μ = values.mean()
+        σ = values.std()
+        print(f"{t}: {n} records, μ {μ}, σ {σ}")
+
+        arrays.append(values)
+        labels.append(t)
+        colors.append(d.color.strip())
+
+fig, ax = subplots()
+ax.hist(arrays, bins=N.linspace(-1,1,1000), histtype='step',
+        label=labels, color=colors, alpha=0.9)
+fn = str(build_dir/'dem-lithology.pdf')
+
+ax.set_ylabel("Area (pixels)")
+ax.set_xlabel("Elevation (m)")
+ax.set_xlim(-1,1)
+ax.legend()
+
+fig.savefig(fn)
