@@ -6,10 +6,11 @@ from geopandas import GeoDataFrame
 from database import db
 from image_files import DEM
 from rasterio.features import geometry_mask
-from matplotlib.pyplot import subplots
+from matplotlib.pyplot import subplots, style
 import numpy as N
 from colour import Color
-from seaborn.apionly import despine
+
+style.use('plot-style.mplstyle')
 
 # Get polygon geometries
 
@@ -34,9 +35,10 @@ with rasterio.open(str(DEM),'r') as img:
         return imdata[mask==True].compressed()
 
     df['array'] = df.geom.map(get_values)
-    df['mean'] = df.array.map(lambda d: d.mean())
+    df['mean'] = df.array.map(lambda d: N.mean(d))
+    df['median'] = df.array.map(lambda d: N.median(d))
 
-df.sort('mean',ascending=True, inplace=True)
+df.sort(['is_mat','mean'],ascending=[0,1], inplace=True)
 
 for i,d in df.iterrows():
     n = len(d.array)
@@ -44,16 +46,19 @@ for i,d in df.iterrows():
 
     area = n*px_size**2/1e6
     μ = d['mean']
+    m = d['median']
     σ = d.array.std()
     print(f"{t}")
     print(f"  {n} pixels")
     print(f"  {area:.3f} km²")
     print(f"  μ {μ:.3f} m")
     print(f"  σ {σ:.3f} m")
+    print(f"med {m:.3f} m")
     print("")
 
 fig, ax = subplots(figsize=(10,6))
 
+# Choose a subset of the array for size constraints
 arrays = df.array.map(lambda d: N.random.choice(d, len(d)//1000))
 
 pos = N.arange(len(arrays))
@@ -68,9 +73,9 @@ for pc, color in zip(parts['bodies'], colors):
 parts['cmeans'].set_color(colors)
 
 ax.set_xticks(pos)
-ax.set_xticklabels(df.unit_id.str.strip())
+ax.set_xticklabels(df.name.str.strip())
 
-ax.set_ylabel("Elevation")
+ax.set_ylabel("Elevation (m above datum) ")
 ax.set_xlabel("Facies")
 ax.set_ylim(-1,1)
 
