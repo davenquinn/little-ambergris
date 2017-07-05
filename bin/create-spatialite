@@ -1,0 +1,35 @@
+#!/bin/bash
+
+dbfile="$PROJECT_DIR/data/ambergris.sqlite"
+dbname=little-ambergris
+
+sql_dir="$PROJECT_DIR/versioned/sql/mobile-export"
+
+rm -f "$dbfile"
+
+ogr2ogr -f SQLite \
+  -dsco SPATIALITE=yes \
+  -sql "@$sql_dir/linework.sql" \
+  -nln "linework" \
+  -overwrite \
+  -lco FID=id \
+  "$dbfile" PG:dbname=$dbname
+
+sqlite3 "$dbfile" < "$sql_dir/linework-type.sql"
+
+ogr2ogr -f SQLite \
+  -dsco SPATIALITE=yes \
+  -sql "@$sql_dir/polygon.sql" \
+  -nln "polygon" \
+  -overwrite \
+  -lco FID=id \
+  "$dbfile" PG:dbname=$dbname
+
+ogr2ogr -f SQLite \
+  -dsco SPATIALITE=yes \
+  -sql "@$sql_dir/polygon-type.sql" \
+  -overwrite \
+  -nln "polygon_type" \
+  -lco FID=id \
+  "$dbfile" PG:dbname=$dbname
+
