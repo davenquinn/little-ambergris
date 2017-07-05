@@ -75,7 +75,7 @@ parts['cmeans'].set_color(colors)
 ax.set_xticks(pos)
 ax.set_xticklabels(df.name.str.strip())
 
-ax.set_ylabel("Elevation (m above datum) ")
+ax.set_ylabel("Elevation (m above datum) <D-N>")
 ax.set_xlabel("Facies")
 ax.set_ylim(-1,1)
 

@@ -1,4 +1,4 @@
-all: theodolite database drone_data #satellite
+all: theodolite database drone_data ../data/ambergris.spatialite #satellite
 
 dbname=little-ambergris
 data:=/Volumes/Lilienthal/Ambergris-2016
@@ -46,6 +46,9 @@ dem-comparison:
 .PHONY: dem-lithology
 dem-lithology:
 	dem-comparison/$@
+
+../data/ambergris.sqlite:
+	ogr2ogr -f SQLite -dsco SPATIALITE=yes $@ PG:dbname=$(dbname) mapping.contact
 
 ###
 # Install modules required for this project
