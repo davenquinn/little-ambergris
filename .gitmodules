@@ -1,0 +1,6 @@
+[submodule "mapping-software/map-digitizer-server"]
+	path = mapping-software/map-digitizer-server
+	url = git://github.com/davenquinn/map-digitizer-server.git
+[submodule "mapping-software/postgis-geologic-map"]
+	path = mapping-software/postgis-geologic-map
+	url = git://github.com/davenquinn/postgis-geologic-map.git
