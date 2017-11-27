@@ -7,4 +7,5 @@ PROJECT_DIR="/Users/Daven/Projects/Turks and Caicos"
 dn="$PROJECT_DIR/data/database-backups"
 
 mkdir -p "${dn}"
-pg_dump -Fc -d $dbname -f "$dn/${dbname}-$(date +%Y-%m-%d,%H.%M.%S).pg-dump"
+pg_dump -Fc -d $dbname -f "$dn/${dbname}-$(date +%Y-%m-%d_%H.%M.%S).pg-dump"
+ls -lah "$dn" | grep pg-dump

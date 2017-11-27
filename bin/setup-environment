@@ -3,4 +3,6 @@
 export VIRTUAL_ENV="$PROJECT_DIR/virtualenv-3.6"
 pyexe=$(readlink "$VIRTUAL_ENV/bin/python")
 export PARENT_ENV="${pyexe:h:h}"
-export PATH="$VIRTUAL_ENV/bin:$PARENT_ENV/bin:$PATH"
+
+here="$(dirname "$(readlink -f $0)")"
+export PATH="$here":"$VIRTUAL_ENV/bin":"$PARENT_ENV/bin":$PATH
