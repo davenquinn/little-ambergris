@@ -1,0 +1,4 @@
+#!/usr/bin/env zsh
+
+"$PROJECT_DIR/versioned/mapping-software/map-digitizer-server/run-server" \
+  little-ambergris
