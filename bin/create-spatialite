@@ -1,7 +1,7 @@
 #!/bin/bash
 
-dbfile="$PROJECT_DIR/data/ambergris.sqlite"
 dbname=little-ambergris
+dbfile="$PROJECT_DIR/data/ambergris.sqlite"
 
 sql_dir="$PROJECT_DIR/versioned/sql/mobile-export"
 
